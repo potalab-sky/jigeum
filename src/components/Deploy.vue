@@ -1,5 +1,5 @@
 <template>
-  <div class="hello">
+  <div class="hello" style="background-color: coral">
     deploy
   </div>
 </template>

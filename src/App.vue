@@ -5,8 +5,8 @@
     </div>
     <div>
 <!--      <Contents></Contents>-->
-      <ManagedHost id="managedHost" v-bind:class="{display: hostDisplay}"></ManagedHost>
-      <Deploy id="deploy" v-bind:class="{display: deployDisplay}"></Deploy>
+      <ManagedHost id="managedHost" @update:onHostPage="onHostPage" v-bind:style="{display: hostDisplay}"></ManagedHost>
+      <Deploy id="deploy" @update:onDeployPage="onDeployPage" v-bind:style="{display: deployDisplay}"></Deploy>
     </div>
   </div>
 </template>
@@ -42,9 +42,9 @@ export default {
 </script>
 
 <style>
-#deploy {
-  display: none;
-}
+/*#deploy {*/
+/*  display: none;*/
+/*}*/
 #menuBoundary {
   width: 250px;
   padding: 10px;

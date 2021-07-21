@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div style="background-color: #42b983">
     Managed Host
   </div>
 </template>
