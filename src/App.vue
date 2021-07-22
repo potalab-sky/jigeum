@@ -5,8 +5,8 @@
     </div>
     <div>
 <!--      <Contents></Contents>-->
-      <ManagedHost id="managedHost" @update:onHostPage="onHostPage" v-bind:style="{display: hostDisplay}"></ManagedHost>
-      <Deploy id="deploy" @update:onDeployPage="onDeployPage" v-bind:style="{display: deployDisplay}"></Deploy>
+      <ManagedHost id="managedHost" @update:onHostPage="onHostPage" :class="{'showDisplay':hostDisplay, 'hideDisplay':!hostDisplay}"></ManagedHost>
+      <Deploy id="deploy" @update:onDeployPage="onDeployPage" :class="{'showDisplay':deployDisplay, 'hideDisplay':!deployDisplay}"></Deploy>
     </div>
   </div>
 </template>
@@ -16,32 +16,37 @@ import Menu from "@/components/Menu";
 import ManagedHost from "@/components/ManagedHost";
 import Deploy from "@/components/Deploy";
 
-let hostDisplay = "block";
-let deployDisplay = "none";
 
 export default {
   name: 'App',
   data() {
     return {
-      hostDisplay: hostDisplay,
-      deployDisplay: deployDisplay
+      hostDisplay: true,
+      deployDisplay: false
     }
   },
   components: {Deploy, ManagedHost, Menu},
   methods: {
     onHostPage() {
-      hostDisplay = "block";
-      deployDisplay = "none";
+      this.hostDisplay = true;
+      this.deployDisplay = false;
     },
     onDeployPage() {
-      hostDisplay = "none";
-      deployDisplay = "block";
+      this.hostDisplay = false;
+      this.deployDisplay = true;
     }
   }
 }
 </script>
 
 <style>
+.showDisplay {
+  display: block;
+}
+
+.hideDisplay {
+  display: none;
+}
 /*#deploy {*/
 /*  display: none;*/
 /*}*/

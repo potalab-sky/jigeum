@@ -1,3 +1,13 @@
 module.exports = {
-  runtimeCompiler: true
+  runtimeCompiler: true,
+  devServer: {
+    proxy: {
+      '/': {
+        "target": 'http://localhost:8080',
+        "pathRewrite": {'^':''},
+        "changeOrigin": true,
+        "secure": false
+      }
+    }
+  }
 }
