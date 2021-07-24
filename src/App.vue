@@ -3,8 +3,7 @@
     <div id="menuBoundary">
       <Menu @update:onHostPage="onHostPage" @update:onDeployPage="onDeployPage"></Menu>
     </div>
-    <div>
-<!--      <Contents></Contents>-->
+    <div id="contents">
       <ManagedHost id="managedHost" @update:onHostPage="onHostPage" :class="{'showDisplay':hostDisplay, 'hideDisplay':!hostDisplay}"></ManagedHost>
       <Deploy id="deploy" @update:onDeployPage="onDeployPage" :class="{'showDisplay':deployDisplay, 'hideDisplay':!deployDisplay}"></Deploy>
     </div>
@@ -50,7 +49,12 @@ export default {
 /*#deploy {*/
 /*  display: none;*/
 /*}*/
+#contents{
+  flex-grow: 2;
+  padding: 0 30px;
+}
 #menuBoundary {
+  flex-grow: 0;
   width: 250px;
   padding: 10px;
   margin-right: 10px;
