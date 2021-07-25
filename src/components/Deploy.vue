@@ -1,32 +1,41 @@
 <template>
-  <div style="padding:5px 15px;border: 1px solid coral">
-    <div style="display: flex; justify-content: space-around;">
+  <div class="deploy_layer">
+    <div class="control_box">
       <input type="button" value="동기화">
-      <input type="button" value="배포">
+      <input type="button" value="배포" v-on:click="deploy">
     </div>
 <!--    <p>-->
 <!--      <input type="button" value="조회" v-on:click="deployListing">-->
 <!--    </p>-->
-    <nav style="display: flex; flex-direction: row">
-      <p>deploy root: </p>
-      <p style="padding: 0 10px 0 10px">
-        <span v-for="(path, idx) in paths" v-bind:key="idx" v-on:click="directoryListingToFullPath(path.val)" style="padding-right: 5px;">{{path.key}}</span>
-<!--        <span v-on:click="deployListing('../')">{{searchText}}</span>-->
-      </p>
-    </nav>
-    <table>
-<!--      <thead></thead>-->
-      <tbody>
-        <tr v-for="(val, idx) in dirList" v-bind:key="val.path" style="display: flex">
-          <td>{{idx+1}}</td>
-          <td>{{val.type}}<td>
-          <td>
-            <span v-if="val.type!='file'"  v-on:click="directoryListing(val.path)">{{val.path}}</span>
-            <span v-else>{{val.path}}</span>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <div class="path_layer">
+      <nav id="path_navi">
+        <p id="path_bar">
+          <span v-for="(path, idx) in paths" v-bind:key="idx">
+            <span class="path_link" v-if="idx !== paths.length-1"
+                  v-on:click="directoryListingToFullPath(path.val)">{{path.key}}</span>
+            <span class="path_cur" v-else>{{path.key}}</span>
+            <span v-if="idx !== paths.length-1"> / </span>
+          </span>
+        </p>
+      </nav>
+    </div>
+    <div class="directory_layer">
+      <table class="directory_table">
+  <!--      <thead></thead>-->
+        <tbody>
+          <tr v-for="val in dirList" v-bind:key="val.path">
+            <td>
+              <input type="checkbox" v-on:click="addDeployPath(val.path)">
+            </td>
+            <td>{{val.type}}<td>
+            <td>
+              <span v-if="val.type!=='file'"  v-on:click="directoryListing(val.path)">{{val.path}}</span>
+              <span v-else>{{val.path}}</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 </template>
 
@@ -42,7 +51,8 @@ export default {
     return {
       searchText: '/',
       paths: [],
-      dirList: []
+      dirList: [],
+      deployList: []
     }
   },
   mounted() {
@@ -73,9 +83,9 @@ export default {
             }
             this.paths = [];
             let tempPath = '/';
-            this.paths.push({"key":'/', "val":tempPath});
+            this.paths.push({"key":'home', "val":tempPath});
             let pathSplit = path.split('/');
-            for (let i = 1; i < pathSplit.length; ++i) {
+            for (let i = 1; i < pathSplit.length-1; ++i) {
               let key = pathSplit[i];
               tempPath += pathSplit[i] + "/";
               let val = tempPath;
@@ -86,6 +96,25 @@ export default {
           .catch((e)=> {
             console.log("ajax error: /directoryList [" + e + "]");
           });
+    },
+    addDeployPath(path) {
+      let find = this.deployList.indexOf(path);
+      if (find === -1) {
+        console.log("add");
+        this.deployList.push(path);
+      } else {
+        console.log("delete");
+        this.deployList = this.deployList.filter(el=>{
+          return el !== path;
+        });
+      }
+      console.log(this.deployList);
+    },
+    deploy() {
+      let len = this.deployList.length;
+      for (let i = 0; i < len; ++i) {
+        console.log(this.deployList.pop());
+      }
     }
   }
 }
@@ -93,6 +122,45 @@ export default {
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
+.deploy_layer {
+  padding:5px 15px;
+  border: 1px solid coral;
+}
+
+.control_box {
+  display: flex;
+  justify-content: space-around;
+}
+
+#path_navi {
+  display: flex;
+  flex-direction: row;
+}
+#path_bar {
+  padding: 0 10px 0 10px;
+}
+
+.directory_table {
+  width: 100%;
+}
+
+.directory_table>tbody>tr {
+  display: flex;
+}
+
+.path_link {
+  color: rgba(82, 74, 62, 0.75);
+}
+.path_link:hover {
+  cursor: pointer;
+  color: black;
+  text-decoration: underline;
+}
+
+.path_cur {
+  font-weight: bold;
+}
+
 h3 {
   margin: 40px 0 0;
 }

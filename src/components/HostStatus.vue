@@ -1,10 +1,12 @@
 <template>
-  <div>Contents</div>
+  <div>
+    HostStatus
+  </div>
 </template>
 
 <script>
 export default {
-  name: "Contents"
+  name: "HostStatus"
 }
 </script>
 

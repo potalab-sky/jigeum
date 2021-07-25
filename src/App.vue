@@ -7,6 +7,9 @@
       <ManagedHost id="managedHost" @update:onHostPage="onHostPage" :class="{'showDisplay':hostDisplay, 'hideDisplay':!hostDisplay}"></ManagedHost>
       <Deploy id="deploy" @update:onDeployPage="onDeployPage" :class="{'showDisplay':deployDisplay, 'hideDisplay':!deployDisplay}"></Deploy>
     </div>
+    <div style="flex-grow: 1">
+      <host-status></host-status>
+    </div>
   </div>
 </template>
 
@@ -14,6 +17,7 @@
 import Menu from "@/components/Menu";
 import ManagedHost from "@/components/ManagedHost";
 import Deploy from "@/components/Deploy";
+import HostStatus from "@/components/HostStatus";
 
 
 export default {
@@ -24,7 +28,7 @@ export default {
       deployDisplay: false
     }
   },
-  components: {Deploy, ManagedHost, Menu},
+  components: {HostStatus, Deploy, ManagedHost, Menu},
   methods: {
     onHostPage() {
       this.hostDisplay = true;
