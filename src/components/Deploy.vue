@@ -1,31 +1,31 @@
 <template>
-  <div class="deploy_layer">
-    <div class="control_box">
-      <input type="button" value="동기화">
-      <input type="button" value="배포" v-on:click="deploy">
+  <div class="deploy-layer">
+    <div class="control-layer">
+      <input class="btn btn-outline-success btn-sync" type="button"  value="동기화">
+      <input class="btn btn-outline-primary btn-deploy" type="button" value="배포" v-on:click="deploy">
     </div>
 <!--    <p>-->
 <!--      <input type="button" value="조회" v-on:click="deployListing">-->
 <!--    </p>-->
-    <div class="path_layer">
-      <nav id="path_navi">
-        <p id="path_bar">
+    <div class="path-layer">
+      <nav id="path-navi">
+        <p id="path-bar">
           <span v-for="(path, idx) in paths" v-bind:key="idx">
-            <span class="path_link" v-if="idx !== paths.length-1"
+            <span class="path-link" v-if="idx !== paths.length-1"
                   v-on:click="directoryListingToFullPath(path.val)">{{path.key}}</span>
-            <span class="path_cur" v-else>{{path.key}}</span>
+            <span class="path-cur" v-else>{{path.key}}</span>
             <span v-if="idx !== paths.length-1"> / </span>
           </span>
         </p>
       </nav>
     </div>
-    <div class="directory_layer">
-      <table class="directory_table">
+    <div class="directory-layer" @drop.prevent="dropFile" @dragover.prevent v-on:drag="console.log('drag')">
+      <table class="directory-table">
   <!--      <thead></thead>-->
         <tbody>
           <tr v-for="val in dirList" v-bind:key="val.path">
             <td>
-              <input type="checkbox" v-on:click="addDeployPath(val.path)">
+              <input type="checkbox" class="form-check-input" v-on:click="addDeployPath(val.path)">
             </td>
             <td>{{val.type}}<td>
             <td>
@@ -45,26 +45,95 @@ import axios from "axios";
 export default {
   name: 'Deploy',
   props: {
-    msg: String
+    hostMap: Map
   },
   data() {
     return {
-      searchText: '/',
+      curPath: '/',
       paths: [],
       dirList: [],
-      deployList: []
+      deployList: [],
+      dropFileName: ''
     }
   },
   mounted() {
     this.directoryListing('');
+    // this.$on('deployLoad', onload);
   },
   methods: {
+    // onLoad() {
+    //   this.directoryListing('');
+    // },
+    dropFile(event) {
+      let droppedFiles = event.dataTransfer.files;
+      // let droppedItems = event.dataTransfer.items;
+      if (!droppedFiles) return;
+
+      for (let i = 0; i < droppedFiles.length; ++i) {
+        let file = droppedFiles[i];
+        // let item = event.dataTransfer.items[i];
+        // if (item.webkitGetAsEntry().()) {
+        //   continue;
+        // }
+        let formData = new FormData();
+        formData.append(file.name, file);
+        axios.post("/upload", formData, {
+          params: {
+            dir: this.curPath
+          },
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        }).then(res => {
+          console.log(res.data.message);
+          if (res.data.res === 'error') {
+            return;
+          }
+          this.requestDeploy(file.name);
+        }).catch(e => {
+          console.log(e);
+        });
+      }
+      // console.log(droppedFiles);
+      // console.log(droppedItems);
+      // console.log(droppedItems[0].webkitGetAsEntry());
+
+      // for (let i = 0; i < droppedFiles.length; ++i) {
+      //   let file = droppedFiles[i];
+      //   console.log(file);
+      // }
+
+      // let length = event.dataTransfer.items.length;
+      // for (let i = 0; i < length; i++) {
+      //   let item = event.dataTransfer.items[i];
+      //   let entry = item.webkitGetAsEntry();
+      //   if (entry.isFile) {
+      //     console.log("file");
+      //   } else if (entry.isDirectory) {
+      //     console.log("directory");
+      //   }
+      //   console.log(item);
+      //   console.log(entry);
+      //   entry.copyto
+      // }
+
+      // droppedFiles.forEach((val)=> {
+      //   console.log(val);
+      //   console.log(val.name)
+      // });
+
+      // fileInfo = droppedFiles.reduce((pre, val, idx) => {
+      //   alert(idx);
+      //   return ""
+      // });
+      // alert(fileInfo)
+    },
     directoryListingToFullPath: function(path) {
       console.log(path);
       this.searchDirectory(path);
     },
     directoryListing: function(searchText) {
-      let data = this.searchText + searchText;
+      let data = this.curPath + searchText;
       if (searchText !== "") {
         data += "/"
       }
@@ -91,7 +160,7 @@ export default {
               let val = tempPath;
               this.paths.push({"key":key, "val":val});
             }
-            this.searchText = path;
+            this.curPath = tempPath;
           })
           .catch((e)=> {
             console.log("ajax error: /directoryList [" + e + "]");
@@ -112,9 +181,20 @@ export default {
     },
     deploy() {
       let len = this.deployList.length;
-      for (let i = 0; i < len; ++i) {
-        console.log(this.deployList.pop());
+      for (let i = len-1; i >= 0 ; --i) {
+        let deployPath = this.deployList.pop();
+        console.log(deployPath);
+        this.requestDeploy(deployPath);
       }
+    },
+    requestDeploy(fileName) {
+      axios.post("/deploy", {path: this.curPath + "/" + fileName})
+          .then(res=>{
+            console.log(res.data);
+            this.searchDirectory(this.curPath);
+          }).catch(e=>{
+        console.log(e);
+      });
     }
   }
 }
@@ -122,42 +202,55 @@ export default {
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
-.deploy_layer {
+.deploy-layer {
+  /*display: flex;*/
+  flex-direction: column;
   padding:5px 15px;
   border: 1px solid coral;
 }
 
-.control_box {
+.control-layer {
   display: flex;
-  justify-content: space-around;
+  /*border-bottom: 1px solid #e6e8eb;*/
+}
+.btn-sync, .btn-deploy {
+  margin: 10px 5px;
 }
 
-#path_navi {
+.path-layer {
+  margin: 10px 0;
+}
+
+#path-navi {
   display: flex;
   flex-direction: row;
 }
-#path_bar {
+#path-bar {
   padding: 0 10px 0 10px;
 }
 
-.directory_table {
+.directory-table {
   width: 100%;
 }
 
-.directory_table>tbody>tr {
+.directory-table>tbody>tr {
   display: flex;
 }
 
-.path_link {
+#path-bar {
+  margin: 0;
+}
+
+.path-link {
   color: rgba(82, 74, 62, 0.75);
 }
-.path_link:hover {
+.path-link:hover {
   cursor: pointer;
   color: black;
   text-decoration: underline;
 }
 
-.path_cur {
+.path-cur {
   font-weight: bold;
 }
 

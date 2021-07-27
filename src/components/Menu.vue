@@ -1,14 +1,12 @@
 <template>
-  <div>
-    <div class="boundary">
-      <div class="container">
-        <div class="line-top"></div>
-        <div class="line-middle"></div>
-        <div class="line-bottom"></div>
-      </div>
-      <p v-on:click="onHostPage">호스트 추가</p>
-      <p v-on:click="onDeployPage">파일 배포</p>
+  <div class="boundary">
+    <div class="menu-layer">
+      <div class="line-top"></div>
+      <div class="line-middle"></div>
+      <div class="line-bottom"></div>
     </div>
+    <p v-on:click="onHostPage">호스트 추가</p>
+    <p v-on:click="onDeployPage">파일 배포</p>
   </div>
 </template>
 
@@ -34,7 +32,7 @@ export default {
   display: flex;
   flex-direction: column;
 }
-.container {
+.menu-layer {
   position: relative;
   margin-left: auto;
   /*float: right;*/
@@ -43,9 +41,9 @@ export default {
   cursor: pointer;
 }
 
-.container .line-top,
-.container .line-middle,
-.container .line-bottom {
+.menu-layer .line-top,
+.menu-layer .line-middle,
+.menu-layer .line-bottom {
   position: absolute;
   display: block;
   height: 4px;
@@ -54,19 +52,19 @@ export default {
   background: #000000;
 }
 
-.container .line-top {
+.menu-layer .line-top {
   top: 0;
   -webkit-transform-origin: 34px 2px;
   transform-origin: 34px 2px;
 }
 
-.container .line-middle {
+.menu-layer .line-middle {
   top: 12px;
   -webkit-transition: opacity 200ms linear;
   transition: opacity 200ms linear;
 }
 
-.container .line-bottom {
+.menu-layer .line-bottom {
   bottom: 0;
   -webkit-transform-origin: 34px 2px;
   transform-origin: 34px 2px;

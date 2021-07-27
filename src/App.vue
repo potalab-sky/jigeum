@@ -4,8 +4,10 @@
       <Menu @update:onHostPage="onHostPage" @update:onDeployPage="onDeployPage"></Menu>
     </div>
     <div id="contents">
-      <ManagedHost id="managedHost" @update:onHostPage="onHostPage" :class="{'showDisplay':hostDisplay, 'hideDisplay':!hostDisplay}"></ManagedHost>
-      <Deploy id="deploy" @update:onDeployPage="onDeployPage" :class="{'showDisplay':deployDisplay, 'hideDisplay':!deployDisplay}"></Deploy>
+      <ManagedHost id="managedHost" v-bind:host-map="hostMap"
+                   @update:onHostPage="onHostPage" :class="{'showDisplay':hostDisplay, 'hideDisplay':!hostDisplay}"></ManagedHost>
+      <Deploy id="deploy" v-bind:host-map="hostMap"
+              @update:onDeployPage="onDeployPage" :class="{'showDisplay':deployDisplay, 'hideDisplay':!deployDisplay}"></Deploy>
     </div>
     <div style="flex-grow: 1">
       <host-status></host-status>
@@ -25,24 +27,30 @@ export default {
   data() {
     return {
       hostDisplay: true,
-      deployDisplay: false
+      deployDisplay: false,
+      hostMap: new Map()
     }
   },
   components: {HostStatus, Deploy, ManagedHost, Menu},
   methods: {
     onHostPage() {
+      console.log(this.hostMap);
       this.hostDisplay = true;
       this.deployDisplay = false;
     },
     onDeployPage() {
       this.hostDisplay = false;
       this.deployDisplay = true;
+      // this.$emit('deployLoad');
     }
   }
 }
 </script>
 
 <style>
+#app {
+  margin: 8px;
+}
 .showDisplay {
   display: block;
 }
