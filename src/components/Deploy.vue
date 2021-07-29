@@ -3,6 +3,9 @@
     <div class="control-layer">
       <input class="btn btn-outline-success btn-sync" type="button"  value="동기화">
       <input class="btn btn-outline-primary btn-deploy" type="button" value="배포" v-on:click="deploy">
+      <button class="btn btn-outline-secondary btn-refresh" value="갱신" v-on:click="searchDirectory(curPath)">
+        <img class="refresh-img"/>
+      </button>
     </div>
 <!--    <p>-->
 <!--      <input type="button" value="조회" v-on:click="deployListing">-->
@@ -12,7 +15,7 @@
         <p id="path-bar">
           <span v-for="(path, idx) in paths" v-bind:key="idx">
             <span class="path-link" v-if="idx !== paths.length-1"
-                  v-on:click="directoryListingToFullPath(path.val)">{{path.key}}</span>
+                  v-on:click="searchDirectory(path.val)">{{path.key}}</span>
             <span class="path-cur" v-else>{{path.key}}</span>
             <span v-if="idx !== paths.length-1"> / </span>
           </span>
@@ -65,72 +68,97 @@ export default {
     //   this.directoryListing('');
     // },
     dropFile(event) {
-      let droppedFiles = event.dataTransfer.files;
-      // let droppedItems = event.dataTransfer.items;
-      if (!droppedFiles) return;
+      // let droppedFiles = event.dataTransfer.files;
+      let droppedItems = event.dataTransfer.items;
+      if (!droppedItems) return;
 
-      for (let i = 0; i < droppedFiles.length; ++i) {
-        let file = droppedFiles[i];
-        // let item = event.dataTransfer.items[i];
-        // if (item.webkitGetAsEntry().()) {
-        //   continue;
+      /*let reader = entryItem.createReader();
+      let entryItem = droppedItems[0].webkitGetAsEntry();
+      reader.readEntries(entries=>{
+        console.log(entries)
+        // for (let i = 0; i < entries.length; ++i) {
+        //   console.log(entries[i] + ", " + entryItem.name);
         // }
-        let formData = new FormData();
-        formData.append(file.name, file);
+      })*/
+
+      for (let i = 0; i < droppedItems.length; ++i) {
+        this.upload(droppedItems[i].webkitGetAsEntry(), this.curPath);
+      }
+    },
+    upload(entryItem, path) {
+      // console.log(entryItem);
+      // console.log(item.getAsFile());
+      if (entryItem.isDirectory) {
+        this.uploadDirectory(entryItem.createReader(), path + "/" + entryItem.name);
+        return;
+      }
+      this.uploadFile(entryItem, path);
+    },
+    uploadFile(entryItem, path) {
+      let formData = new FormData();
+      entryItem.file(file=> {
+        formData.append(entryItem.name, file);
         axios.post("/upload", formData, {
           params: {
-            dir: this.curPath
+            dir: path
           },
           headers: {
             'Content-Type': 'multipart/form-data'
           }
-        }).then(res => {
-          console.log(res.data.message);
-          if (res.data.res === 'error') {
-            return;
-          }
-          this.requestDeploy(file.name);
+        }).then(() => {
+          // console.log(res.data.message);
+          console.log("path: " + path + " ``` name: " + entryItem.name)
+          // if (res.data.res === 'error') {
+          //   return;
+          // }
+          // this.requestDeploy(entryItem.name);
         }).catch(e => {
           console.log(e);
         });
-      }
-      // console.log(droppedFiles);
-      // console.log(droppedItems);
-      // console.log(droppedItems[0].webkitGetAsEntry());
-
-      // for (let i = 0; i < droppedFiles.length; ++i) {
-      //   let file = droppedFiles[i];
-      //   console.log(file);
-      // }
-
-      // let length = event.dataTransfer.items.length;
-      // for (let i = 0; i < length; i++) {
-      //   let item = event.dataTransfer.items[i];
-      //   let entry = item.webkitGetAsEntry();
-      //   if (entry.isFile) {
-      //     console.log("file");
-      //   } else if (entry.isDirectory) {
-      //     console.log("directory");
-      //   }
-      //   console.log(item);
-      //   console.log(entry);
-      //   entry.copyto
-      // }
-
-      // droppedFiles.forEach((val)=> {
-      //   console.log(val);
-      //   console.log(val.name)
-      // });
-
-      // fileInfo = droppedFiles.reduce((pre, val, idx) => {
-      //   alert(idx);
-      //   return ""
-      // });
-      // alert(fileInfo)
+      });
     },
-    directoryListingToFullPath: function(path) {
-      console.log(path);
-      this.searchDirectory(path);
+    uploadFiles(itemReader, entryItems, path, idx) {
+      let entryItem = entryItems[idx];
+      if (entryItems.length <= idx) {
+        if (entryItems.length > 0) {
+          this.uploadDirectory(itemReader, path);
+        }
+        return;
+      } else if (entryItem.isDirectory) {
+        this.uploadDirectory(entryItem.createReader(), path + "/" + entryItem.name);
+        this.uploadFiles(itemReader, entryItems, path, ++idx);
+        return;
+      }
+
+      let formData = new FormData();
+      entryItem.file(file=> {
+        formData.append(entryItem.name, file);
+        axios.post("/upload", formData, {
+          params: {
+            dir: path
+          },
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        }).then(() => {
+          // console.log(res.data.message);
+          console.log("path: " + path + " ``` name: " + entryItem.name);
+          this.uploadFiles(itemReader, entryItems, path, ++idx);
+          // if (res.data.res === 'error') {
+          //   return;
+          // }
+          // this.requestDeploy(entryItem.name);
+        }).catch(e => {
+          console.log(e);
+        });
+      });
+    },
+    uploadDirectory(itemReader, parentPath) {
+      itemReader.readEntries(entries=>{
+        console.log(entries);
+        console.log(parentPath);
+        this.uploadFiles(itemReader, entries, parentPath, 0);
+      });
     },
     directoryListing: function(searchText) {
       let data = this.curPath + searchText;
@@ -191,7 +219,6 @@ export default {
       axios.post("/deploy", {path: this.curPath + "/" + fileName})
           .then(res=>{
             console.log(res.data);
-            this.searchDirectory(this.curPath);
           }).catch(e=>{
         console.log(e);
       });
@@ -213,7 +240,7 @@ export default {
   display: flex;
   /*border-bottom: 1px solid #e6e8eb;*/
 }
-.btn-sync, .btn-deploy {
+.btn-sync, .btn-deploy, .btn-refresh {
   margin: 10px 5px;
 }
 
@@ -252,6 +279,10 @@ export default {
 
 .path-cur {
   font-weight: bold;
+}
+
+.refresh-img {
+  content: url("../assets/refresh_black_24dp.svg");
 }
 
 h3 {
