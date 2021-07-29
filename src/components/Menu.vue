@@ -1,9 +1,7 @@
 <template>
   <div class="boundary">
     <div class="menu-layer">
-      <div class="line-top"></div>
-      <div class="line-middle"></div>
-      <div class="line-bottom"></div>
+      <img class="menu-img"/>
     </div>
     <p v-on:click="onHostPage">호스트 추가</p>
     <p v-on:click="onDeployPage">파일 배포</p>
@@ -39,6 +37,10 @@ export default {
   height: 28px;
   width: 36px;
   cursor: pointer;
+}
+
+.menu-img {
+  content: url("../assets/menu_black_36dp.svg");
 }
 
 .menu-layer .line-top,
