@@ -74,6 +74,7 @@ export default {
     },
     upload(entryItem, path) {
       if (entryItem.isDirectory) {
+        console.log("Directory[+ " + entryItem.name + "]forEach before");
         this.uploadDirectory(entryItem.createReader(), path + "/" + entryItem.name);
         return;
       }
@@ -84,7 +85,7 @@ export default {
         this.requestFile(entryItem.name, path, file);
       });
     },
-    async requestFile(name, path, file) {
+    async requestFile(name, path, file, callback) {
       let formData = new FormData();
       formData.append(name, file);
       try {
@@ -99,15 +100,15 @@ export default {
         if (res.data.res === 'error') {
           throw res.data.message;
         }
-        // if (callback !== undefined) {
-        //   callback();
-        // }
+        if (callback !== undefined) {
+          callback();
+        }
         console.log("path: " + path + " ``` name: " + name);
       } catch(e) {
         console.log(e);
       }
     },
-    /*uploadFiles(itemReader, entryItems, path, idx) {
+    uploadFiles(itemReader, entryItems, path, idx) {
       let entryItem = entryItems[idx];
       if (entryItems.length <= idx) {
         if (entryItems.length > 0) {
@@ -125,27 +126,11 @@ export default {
           this.uploadFiles(itemReader, entryItems, path, ++idx);
         });
       });
-    },*/
+    },
     uploadDirectory(itemReader, parentPath) {
       itemReader.readEntries(entries=>{
-        console.log("Directory[+ " +  + "]forEach before");
-        for (let i = 0; i < entries.length; ++i) {
-          if (entries[i].isDirectory) {
-            this.uploadDirectory(entries[i].createReader(), parentPath + "/" + entries[i].name);
-          } else {
-            this.uploadFile(entries[i], parentPath);
-          }
-        }
-        // entries.forEach(entryItem=> {
-        //   if (entryItem.isDirectory) {
-        //     this.uploadDirectory(entryItem.createReader(), parentPath + "/" + entryItem.name);
-        //   } else {
-        //     this.uploadFile(entryItem, parentPath);
-        //   }
-        // });
-        if (entries.length > 0) {
-          this.uploadDirectory(itemReader, parentPath);
-        }
+        console.log(entries);
+        this.uploadFiles(itemReader, entries, parentPath, 0);
       });
     },
 
