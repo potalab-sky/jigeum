@@ -64,30 +64,15 @@ export default {
     // this.$on('deployLoad', onload);
   },
   methods: {
-    // onLoad() {
-    //   this.directoryListing('');
-    // },
     dropFile(event) {
-      // let droppedFiles = event.dataTransfer.files;
       let droppedItems = event.dataTransfer.items;
       if (!droppedItems) return;
-
-      /*let reader = entryItem.createReader();
-      let entryItem = droppedItems[0].webkitGetAsEntry();
-      reader.readEntries(entries=>{
-        console.log(entries)
-        // for (let i = 0; i < entries.length; ++i) {
-        //   console.log(entries[i] + ", " + entryItem.name);
-        // }
-      })*/
 
       for (let i = 0; i < droppedItems.length; ++i) {
         this.upload(droppedItems[i].webkitGetAsEntry(), this.curPath);
       }
     },
     upload(entryItem, path) {
-      // console.log(entryItem);
-      // console.log(item.getAsFile());
       if (entryItem.isDirectory) {
         this.uploadDirectory(entryItem.createReader(), path + "/" + entryItem.name);
         return;
@@ -95,29 +80,34 @@ export default {
       this.uploadFile(entryItem, path);
     },
     uploadFile(entryItem, path) {
-      let formData = new FormData();
       entryItem.file(file=> {
-        formData.append(entryItem.name, file);
-        axios.post("/upload", formData, {
+        this.requestFile(entryItem.name, path, file);
+      });
+    },
+    async requestFile(name, path, file) {
+      let formData = new FormData();
+      formData.append(name, file);
+      try {
+        let res = await axios.post("/upload", formData, {
           params: {
             dir: path
           },
           headers: {
             'Content-Type': 'multipart/form-data'
           }
-        }).then(() => {
-          // console.log(res.data.message);
-          console.log("path: " + path + " ``` name: " + entryItem.name)
-          // if (res.data.res === 'error') {
-          //   return;
-          // }
-          // this.requestDeploy(entryItem.name);
-        }).catch(e => {
-          console.log(e);
         });
-      });
+        if (res.data.res === 'error') {
+          throw res.data.message;
+        }
+        // if (callback !== undefined) {
+        //   callback();
+        // }
+        console.log("path: " + path + " ``` name: " + name);
+      } catch(e) {
+        console.log(e);
+      }
     },
-    uploadFiles(itemReader, entryItems, path, idx) {
+    /*uploadFiles(itemReader, entryItems, path, idx) {
       let entryItem = entryItems[idx];
       if (entryItems.length <= idx) {
         if (entryItems.length > 0) {
@@ -130,36 +120,35 @@ export default {
         return;
       }
 
-      let formData = new FormData();
       entryItem.file(file=> {
-        formData.append(entryItem.name, file);
-        axios.post("/upload", formData, {
-          params: {
-            dir: path
-          },
-          headers: {
-            'Content-Type': 'multipart/form-data'
-          }
-        }).then(() => {
-          // console.log(res.data.message);
-          console.log("path: " + path + " ``` name: " + entryItem.name);
+        this.requestFile(entryItem.name, path, file, ()=> {
           this.uploadFiles(itemReader, entryItems, path, ++idx);
-          // if (res.data.res === 'error') {
-          //   return;
-          // }
-          // this.requestDeploy(entryItem.name);
-        }).catch(e => {
-          console.log(e);
         });
       });
-    },
+    },*/
     uploadDirectory(itemReader, parentPath) {
       itemReader.readEntries(entries=>{
-        console.log(entries);
-        console.log(parentPath);
-        this.uploadFiles(itemReader, entries, parentPath, 0);
+        console.log("Directory[+ " +  + "]forEach before");
+        for (let i = 0; i < entries.length; ++i) {
+          if (entries[i].isDirectory) {
+            this.uploadDirectory(entries[i].createReader(), parentPath + "/" + entries[i].name);
+          } else {
+            this.uploadFile(entries[i], parentPath);
+          }
+        }
+        // entries.forEach(entryItem=> {
+        //   if (entryItem.isDirectory) {
+        //     this.uploadDirectory(entryItem.createReader(), parentPath + "/" + entryItem.name);
+        //   } else {
+        //     this.uploadFile(entryItem, parentPath);
+        //   }
+        // });
+        if (entries.length > 0) {
+          this.uploadDirectory(itemReader, parentPath);
+        }
       });
     },
+
     directoryListing: function(searchText) {
       let data = this.curPath + searchText;
       if (searchText !== "") {
@@ -168,31 +157,29 @@ export default {
       console.log(data);
       this.searchDirectory(data);
     },
-    searchDirectory(path) {
-      axios.get('/directoryList', {params:{searchText: path}})
-          .then((res)=> {
-            this.dirList = [];
-
-            // console.log("/directoryList: " + res);
-            let dataList = res.data.dirList;
-            for (let i = 0; i < dataList.length; ++i) {
-              this.dirList.push(dataList[i]);
-            }
-            this.paths = [];
-            let tempPath = '/';
-            this.paths.push({"key":'home', "val":tempPath});
-            let pathSplit = path.split('/');
-            for (let i = 1; i < pathSplit.length-1; ++i) {
-              let key = pathSplit[i];
-              tempPath += pathSplit[i] + "/";
-              let val = tempPath;
-              this.paths.push({"key":key, "val":val});
-            }
-            this.curPath = tempPath;
-          })
-          .catch((e)=> {
-            console.log("ajax error: /directoryList [" + e + "]");
-          });
+    async searchDirectory(path) {
+      try {
+        let res = await axios.get('/directoryList', {params: {searchText: path}});
+        this.dirList = [];
+        // console.log("/directoryList: " + res);
+        let dataList = res.data.dirList;
+        for (let i = 0; i < dataList.length; ++i) {
+          this.dirList.push(dataList[i]);
+        }
+        this.paths = [];
+        let tempPath = '/';
+        this.paths.push({"key": 'home', "val": tempPath});
+        let pathSplit = path.split('/');
+        for (let i = 1; i < pathSplit.length - 1; ++i) {
+          let key = pathSplit[i];
+          tempPath += pathSplit[i] + "/";
+          let val = tempPath;
+          this.paths.push({"key": key, "val": val});
+        }
+        this.curPath = tempPath;
+      } catch(e) {
+        console.log("ajax error: /directoryList [" + e + "]");
+      }
     },
     addDeployPath(path) {
       let find = this.deployList.indexOf(path);
