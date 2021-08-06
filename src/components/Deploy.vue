@@ -72,20 +72,61 @@ export default {
         this.upload(droppedItems[i].webkitGetAsEntry(), this.curPath);
       }
     },
-    upload(entryItem, path) {
+    async upload(entryItem, path) {
       if (entryItem.isDirectory) {
-        console.log("Directory[+ " + entryItem.name + "]forEach before");
-        this.uploadDirectory(entryItem.createReader(), path + "/" + entryItem.name);
+        // console.log("Directory[+ " + entryItem.name + "]forEach before");
+        // this.uploadDirectory(entryItem.createReader(), path + "/" + entryItem.name);
+        let itemList = await exploreDirectory(entryItem);
+        // console.log(itemList);
+        // for(let res of this.traverseItems(itemList)) {
+        //   console.log(res);
+        // }
+        this.traverseItems(itemList);
+        console.log('end');
         return;
       }
-      this.uploadFile(entryItem, path);
+      await this.uploadFile(entryItem, path);
     },
-    uploadFile(entryItem, path) {
+    traverseItems(itemList) {
+      for (let item of itemList) {
+        if (!item.length) {
+          console.log(item.fullPath);
+          let path = item.fullPath.replace(item.name, '');
+          this.uploadFile(item, path);
+        }/* else {
+          for(let res of this.traverseItems(itemList)) {
+            if (res.done) {
+              break;
+            }
+          }
+        }*/
+      }
+      // itemList.forEach(item=> {
+      //   if (!item.length) {
+      //     console.log(item.fullPath);
+      //     let path = item.fullPath.replace(item.name, '');
+      //     this.uploadFile(item, path);
+      //   } else {
+      //     this.traverseItems(item);
+      //   }
+      // });
+    },
+    async uploadFile(entryItem, path) {
+      let promiseList = [];
       entryItem.file(file=> {
-        this.requestFile(entryItem.name, path, file);
+        promiseList.push(new Promise(resolve => {
+          this.requestFile(entryItem.name, path, file);
+          resolve();
+        }));
       });
+      try {
+        let res = await Promise.all(promiseList);
+        console.log(res);
+      } catch (e) {
+        console.log(e);
+      }
     },
-    async requestFile(name, path, file, callback) {
+    async requestFile(name, path, file) {
       let formData = new FormData();
       formData.append(name, file);
       try {
@@ -99,9 +140,6 @@ export default {
         });
         if (res.data.res === 'error') {
           throw res.data.message;
-        }
-        if (callback !== undefined) {
-          callback();
         }
         console.log("path: " + path + " ``` name: " + name);
       } catch(e) {
@@ -129,12 +167,27 @@ export default {
     },
     uploadDirectory(itemReader, parentPath) {
       itemReader.readEntries(entries=>{
-        console.log(entries);
-        this.uploadFiles(itemReader, entries, parentPath, 0);
+        // console.log(entries);
+        // this.uploadFiles(itemReader, entries, parentPath, 0);
+        entries.forEach(entryItem=> {
+          if (entryItem.isDirectory) {
+            this.uploadDirectory(entryItem.createReader(), parentPath + "/" + entryItem.name);
+          } else {
+            let item = new Object();
+            item.path = parentPath;
+            item.entryItem = entryItem;
+            this.basket.put(item);
+          }
+        });
+        if (entries.length > 0) {
+          this.uploadDirectory(itemReader, parentPath);
+        }
+
       });
     },
 
     directoryListing: function(searchText) {
+
       let data = this.curPath + searchText;
       if (searchText !== "") {
         data += "/"
@@ -196,6 +249,31 @@ export default {
       });
     }
   }
+}
+
+function exploreDirectory(entryItem) {
+  let reader = entryItem.createReader();
+  return new Promise(resolve => {
+    var promiseList = [];
+    (function readEntries() {
+      reader.readEntries(entries=> {
+        if (!entries.length) {
+          resolve(Promise.all(promiseList));
+          return;
+        }
+
+        promiseList.push(Promise.all(entries.map(entryItem=> {
+          if (entryItem.isFile) {
+            return entryItem;
+          } else {
+            return exploreDirectory(entryItem);
+          }
+        })));
+
+        readEntries();
+      });
+    }());
+  });
 }
 </script>
 
