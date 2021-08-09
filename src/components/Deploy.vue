@@ -44,7 +44,7 @@
 
 <script>
 import axios from "axios";
-
+import ItemInfo from "../js/data"
 export default {
   name: 'Deploy',
   props: {
@@ -76,57 +76,38 @@ export default {
       if (entryItem.isDirectory) {
         // console.log("Directory[+ " + entryItem.name + "]forEach before");
         // this.uploadDirectory(entryItem.createReader(), path + "/" + entryItem.name);
-        let itemList = await exploreDirectory(entryItem);
-        // console.log(itemList);
-        // for(let res of this.traverseItems(itemList)) {
-        //   console.log(res);
-        // }
-        this.traverseItems(itemList);
+        let itemTable = await exploreDirectory(entryItem);
+        const itemInfo = new ItemInfo(itemTable);
+
+        this.uploadFiles(itemInfo.next(), entryItem);
         console.log('end');
         return;
       }
-      await this.uploadFile(entryItem, path);
-    },
-    traverseItems(itemList) {
-      for (let item of itemList) {
-        if (!item.length) {
-          console.log(item.fullPath);
-          let path = item.fullPath.replace(item.name, '');
-          this.uploadFile(item, path);
-        }/* else {
-          for(let res of this.traverseItems(itemList)) {
-            if (res.done) {
-              break;
-            }
-          }
-        }*/
-      }
-      // itemList.forEach(item=> {
-      //   if (!item.length) {
-      //     console.log(item.fullPath);
-      //     let path = item.fullPath.replace(item.name, '');
-      //     this.uploadFile(item, path);
-      //   } else {
-      //     this.traverseItems(item);
-      //   }
-      // });
-    },
-    async uploadFile(entryItem, path) {
-      let promiseList = [];
-      entryItem.file(file=> {
-        promiseList.push(new Promise(resolve => {
-          this.requestFile(entryItem.name, path, file);
-          resolve();
-        }));
+      this.uploadFile(entryItem, path, ()=> {
+        this.requestDeploy(entryItem.name);
       });
-      try {
-        let res = await Promise.all(promiseList);
-        console.log(res);
-      } catch (e) {
-        console.log(e);
-      }
     },
-    async requestFile(name, path, file) {
+    uploadFiles(iter, rootItem) {
+      let data = iter.next();
+      if (data.done) {
+        this.requestDeploy(rootItem.name);
+        console.log("done");
+        console.log('deploy: ' + rootItem.name);
+        return;
+      }
+      let item = data.value;
+      let path = item.fullPath.replace(item.name, '');
+      this.uploadFile(item, path, () => {
+        this.uploadFiles(iter, rootItem);
+      });
+    },
+    uploadFile(entryItem, path, callback) {
+      entryItem.file(file=> {
+        this.requestFile(entryItem.name, path, file, callback);
+      });
+    },
+
+    async requestFile(name, path, file, callback) {
       let formData = new FormData();
       formData.append(name, file);
       try {
@@ -142,48 +123,13 @@ export default {
           throw res.data.message;
         }
         console.log("path: " + path + " ``` name: " + name);
+
+        if (callback !== undefined) {
+          callback();
+        }
       } catch(e) {
         console.log(e);
       }
-    },
-    uploadFiles(itemReader, entryItems, path, idx) {
-      let entryItem = entryItems[idx];
-      if (entryItems.length <= idx) {
-        if (entryItems.length > 0) {
-          this.uploadDirectory(itemReader, path);
-        }
-        return;
-      } else if (entryItem.isDirectory) {
-        this.uploadDirectory(entryItem.createReader(), path + "/" + entryItem.name);
-        this.uploadFiles(itemReader, entryItems, path, ++idx);
-        return;
-      }
-
-      entryItem.file(file=> {
-        this.requestFile(entryItem.name, path, file, ()=> {
-          this.uploadFiles(itemReader, entryItems, path, ++idx);
-        });
-      });
-    },
-    uploadDirectory(itemReader, parentPath) {
-      itemReader.readEntries(entries=>{
-        // console.log(entries);
-        // this.uploadFiles(itemReader, entries, parentPath, 0);
-        entries.forEach(entryItem=> {
-          if (entryItem.isDirectory) {
-            this.uploadDirectory(entryItem.createReader(), parentPath + "/" + entryItem.name);
-          } else {
-            let item = new Object();
-            item.path = parentPath;
-            item.entryItem = entryItem;
-            this.basket.put(item);
-          }
-        });
-        if (entries.length > 0) {
-          this.uploadDirectory(itemReader, parentPath);
-        }
-
-      });
     },
 
     directoryListing: function(searchText) {
@@ -240,8 +186,11 @@ export default {
         this.requestDeploy(deployPath);
       }
     },
-    requestDeploy(fileName) {
-      axios.post("/deploy", {path: this.curPath + "/" + fileName})
+    requestDeploy(fileName, path) {
+      if (path === undefined) {
+        path = this.curPath;
+      }
+      axios.post("/deploy", {path: path + "/" + fileName})
           .then(res=>{
             console.log(res.data);
           }).catch(e=>{
@@ -258,7 +207,9 @@ function exploreDirectory(entryItem) {
     (function readEntries() {
       reader.readEntries(entries=> {
         if (!entries.length) {
-          resolve(Promise.all(promiseList));
+          let res = Promise.all(promiseList);
+          // console.log(res);
+          resolve(res);
           return;
         }
 
